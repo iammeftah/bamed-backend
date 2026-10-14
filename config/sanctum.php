@@ -1,4 +1,5 @@
 <?php
+// backend/config/sanctum.php
 
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
@@ -44,13 +45,12 @@ return [
     | Expiration Minutes
     |--------------------------------------------------------------------------
     |
-    | This value controls the number of minutes until an issued token will be
-    | considered expired. This will override any values set in the token's
-    | "expires_at" attribute, but first-party sessions are not affected.
+    | Tokens live 12 hours (720 minutes). Keep in sync with SESSION_MAX_AGE
+    | in frontend/lib/auth/constants.ts, so the cookie and the token die together.
     |
     */
 
-    'expiration' => null,
+    'expiration' => (int) env('SANCTUM_EXPIRATION', 720),
 
     /*
     |--------------------------------------------------------------------------
