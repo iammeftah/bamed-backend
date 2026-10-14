@@ -8,12 +8,17 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class StoreCategoryResource extends JsonResource
 {
     /**
-     * Transform the resource into an array.
+     * Public shape: the id is the slug, because the shop filters use it in the URL.
      *
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
     {
-        return parent::toArray($request);
+        return [
+            'id' => $this->slug,
+            'label' => $this->name,
+            'sizeScale' => $this->size_scale,
+            'image' => $this->image,
+        ];
     }
 }

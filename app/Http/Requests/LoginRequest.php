@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Support\Phone;
 use Illuminate\Foundation\Http\FormRequest;
 
 class LoginRequest extends FormRequest
@@ -13,17 +14,7 @@ class LoginRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $p = preg_replace('/[\s\-().]/', '', (string) $this->input('phone'));
-
-        if (str_starts_with($p, '00212')) {
-            $p = '+' . substr($p, 2);
-        } elseif (str_starts_with($p, '212')) {
-            $p = '+' . $p;
-        } elseif (preg_match('/^0[5-7]\d{8}$/', $p)) {
-            $p = '+212' . substr($p, 1);
-        }
-
-        $this->merge(['phone' => $p]);
+        $this->merge(['phone' => Phone::normalize($this->input('phone'))]);
     }
 
     public function rules(): array
