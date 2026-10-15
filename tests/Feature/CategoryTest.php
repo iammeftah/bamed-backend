@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Admin;
 use App\Models\Category;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -30,7 +31,7 @@ class CategoryTest extends TestCase
     {
         return Category::create([
             'name' => $name,
-            'slug' => \Illuminate\Support\Str::slug($name),
+            'slug' => Str::slug($name),
             'description' => '',
             'size_scale' => $scale,
         ]);
@@ -80,9 +81,11 @@ class CategoryTest extends TestCase
         $this->signIn();
         $this->category('Hoodies');
 
+        // The uniqueness rule lives on the slug (built from the name), so the error comes back under "slug".
+        // The dashboard shows the first field error, whatever its key.
         $this->postJson('/api/admin/categories', ['name' => 'hoodies', 'sizeScale' => 'letters'])
             ->assertStatus(422)
-            ->assertJsonPath('errors.name.0', 'Une catégorie porte déjà ce nom.');
+            ->assertJsonPath('errors.slug.0', 'Une catégorie porte déjà ce nom.');
     }
 
     public function test_unknown_size_scale_is_refused(): void

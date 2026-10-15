@@ -13,4 +13,10 @@ class Category extends Model
     {
         return $this->hasMany(Product::class);
     }
+
+    /** How many products use this category (a category in use can't be deleted). */
+    public function productsCount(): int
+    {
+        return $this->products()->count();
+    }
 }
