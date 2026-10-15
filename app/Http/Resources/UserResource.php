@@ -13,7 +13,7 @@ class UserResource extends JsonResource
             'id' => (string) $this->id,
             'name' => $this->name,
             'phone' => $this->phone,
-            'role' => 'admin',
+            'role' => $this->isSuperAdmin() ? 'super_admin' : 'admin',
         ];
     }
 }

@@ -8,29 +8,31 @@ use App\Http\Resources\AdminResource;
 use App\Models\Admin;
 use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
+/**
+ * The shop team. The super admin is invisible here: nobody can list, edit or
+ * delete it through the API (it is managed by AdminSeeder only).
+ */
 class AdminController extends Controller
 {
     public function __construct(private ActivityLogger $log) {}
 
     public function index()
     {
-        return AdminResource::collection(Admin::orderBy('id')->get());
+        return AdminResource::collection(Admin::regular()->orderBy('id')->get());
     }
 
     public function store(AdminRequest $request)
     {
         $data = $request->validated();
 
-        // The team form has no password field yet. Without one, the account gets a
-        // random password nobody knows (set a real one with a "password" field or tinker).
+        // "role" is not fillable: every account created here is a regular admin
         $admin = Admin::create([
             'name' => $data['name'],
             'phone' => $data['phone'],
             'active' => (bool) $data['active'],
-            'password' => $data['password'] ?? Str::random(40),
+            'password' => $data['password'],
         ]);
 
         $this->log->record(
@@ -43,6 +45,8 @@ class AdminController extends Controller
 
     public function update(AdminRequest $request, Admin $admin)
     {
+        abort_if($admin->isSuperAdmin(), 404);
+
         $data = $request->validated();
         $active = (bool) $data['active'];
 
@@ -81,6 +85,8 @@ class AdminController extends Controller
 
     public function destroy(Request $request, Admin $admin)
     {
+        abort_if($admin->isSuperAdmin(), 404);
+
         if ($admin->is($request->user())) {
             throw ValidationException::withMessages([
                 'admin' => 'Vous ne pouvez pas supprimer votre propre compte.',
@@ -105,9 +111,13 @@ class AdminController extends Controller
         return response()->noContent();
     }
 
+    /** The shop must always keep one active regular admin (the super admin does not count). */
     private function ensureAnotherActive(Admin $admin): void
     {
-        $other = Admin::where('active', true)->where('id', '!=', $admin->id)->exists();
+        $other = Admin::regular()
+            ->where('active', true)
+            ->where('id', '!=', $admin->id)
+            ->exists();
 
         if (! $other) {
             throw ValidationException::withMessages([

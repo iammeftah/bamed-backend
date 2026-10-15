@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\LogController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\SaleController;
 use App\Http\Controllers\Api\StockController;
+use App\Http\Controllers\Api\SystemController;
 use App\Http\Controllers\Api\UploadController;
 use Illuminate\Support\Facades\Route;
 
@@ -52,4 +53,11 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'throttle:120,1'])->group(fu
     Route::post('sales', [SaleController::class, 'store']);
 
     Route::get('logs', [LogController::class, 'index']);
+
+    // Developer dashboard: super admin only
+    Route::prefix('system')->middleware('super')->group(function () {
+        Route::get('overview', [SystemController::class, 'overview']);
+        Route::post('prune-images', [SystemController::class, 'pruneImages']);
+        Route::delete('errors', [SystemController::class, 'clearErrors']);
+    });
 });

@@ -30,7 +30,8 @@ class DashboardController extends Controller
             ->limit(self::LIMIT)
             ->get();
 
-        $admins = Admin::orderBy('id')->get();
+        // The super admin never appears in the shop team or in the seller list
+        $admins = Admin::regular()->orderBy('id')->get();
 
         $sales = Sale::query()
             ->orderByDesc('created_at')

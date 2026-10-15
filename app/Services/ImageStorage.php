@@ -92,6 +92,73 @@ class ImageStorage
         }
     }
 
+    /**
+     * Files in storage that no product photo points to (failed saves, abandoned forms).
+     * Files younger than $minAgeMinutes are kept: they may belong to a form still open.
+     *
+     * @return list<array{path: string, size: int}>
+     */
+    public function orphans(int $minAgeMinutes = 60): array
+    {
+        $disk = Storage::disk(self::DISK);
+
+        $used = array_flip(array_filter(
+            ProductImage::query()->pluck('src')->map(fn ($u) => $this->pathFromUrl((string) $u))->all()
+        ));
+
+        $limit = now()->subMinutes(max(0, $minAgeMinutes))->getTimestamp();
+        $out = [];
+
+        foreach ($this->imageFiles() as $path) {
+            if (isset($used[$path]) || $disk->lastModified($path) > $limit) {
+                continue;
+            }
+
+            $out[] = ['path' => $path, 'size' => (int) $disk->size($path)];
+        }
+
+        return $out;
+    }
+
+    /** Deletes the orphan files and returns how many were removed. */
+    public function pruneOrphans(int $minAgeMinutes = 60): int
+    {
+        $disk = Storage::disk(self::DISK);
+        $count = 0;
+
+        foreach ($this->orphans($minAgeMinutes) as $file) {
+            if ($disk->delete($file['path'])) {
+                $count++;
+            }
+        }
+
+        return $count;
+    }
+
+    /** @return array{files: int, bytes: int, orphans: int, orphanBytes: int} */
+    public function stats(): array
+    {
+        $disk = Storage::disk(self::DISK);
+        $files = $this->imageFiles();
+        $orphans = $this->orphans();
+
+        return [
+            'files' => count($files),
+            'bytes' => (int) array_sum(array_map(fn ($p) => $disk->size($p), $files)),
+            'orphans' => count($orphans),
+            'orphanBytes' => (int) array_sum(array_column($orphans, 'size')),
+        ];
+    }
+
+    /** @return list<string> */
+    private function imageFiles(): array
+    {
+        return array_values(array_filter(
+            Storage::disk(self::DISK)->files(self::DIR),
+            fn (string $p) => (bool) preg_match('/\.(webp|jpe?g|png)$/i', $p),
+        ));
+    }
+
     /** "http://host/storage/products/abc.webp" -> "products/abc.webp" (null if not ours). */
     private function pathFromUrl(string $url): ?string
     {
