@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\LogController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\SaleController;
@@ -26,6 +27,9 @@ Route::get('products/{id}', [ProductController::class, 'show'])->whereNumber('id
 
 // Back office: the Next.js proxy forwards /api/admin/* to /admin/* here
 Route::prefix('admin')->middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
+    // One call that loads the whole dashboard
+    Route::get('overview', [DashboardController::class, 'index']);
+
     Route::get('categories', [CategoryController::class, 'adminIndex']);
     Route::post('categories', [CategoryController::class, 'store']);
     Route::put('categories/{category}', [CategoryController::class, 'update']);
