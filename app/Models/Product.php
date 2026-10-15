@@ -68,6 +68,15 @@ class Product extends Model
         }
     }
 
+    /** Every photo URL of this product, read from the database (not from loaded relations). */
+    public function imageUrls(): array
+    {
+        return ProductImage::query()
+            ->whereIn('product_color_id', ProductColor::where('product_id', $this->id)->select('id'))
+            ->pluck('src')
+            ->all();
+    }
+
     /** Colours with their photos, in the shape the frontend expects. Needs colors.images loaded. */
     public function colorsPayload(): array
     {

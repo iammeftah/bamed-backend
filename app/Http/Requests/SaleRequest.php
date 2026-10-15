@@ -2,28 +2,34 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class SaleRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            //
+            'productId' => ['required', 'integer'],
+            'qty' => ['required', 'integer', 'min:1', 'max:10000'],
+            'soldById' => ['required', 'integer'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'productId.required' => 'Produit introuvable ou inactif.',
+            'productId.integer' => 'Produit introuvable ou inactif.',
+            'qty.required' => "La quantité doit être d'au moins 1.",
+            'qty.integer' => "La quantité doit être d'au moins 1.",
+            'qty.min' => "La quantité doit être d'au moins 1.",
+            'soldById.required' => 'Choisissez un vendeur actif.',
+            'soldById.integer' => 'Choisissez un vendeur actif.',
         ];
     }
 }

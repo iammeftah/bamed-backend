@@ -7,9 +7,13 @@ use App\Http\Requests\CategoryRequest;
 use App\Http\Resources\CategoryResource;
 use App\Http\Resources\StoreCategoryResource;
 use App\Models\Category;
+use App\Services\ActivityLogger;
+use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
+    public function __construct(private ActivityLogger $log) {}
+
     /** Public: GET /categories */
     public function index()
     {
@@ -24,19 +28,29 @@ class CategoryController extends Controller
 
     public function store(CategoryRequest $request)
     {
-        $category = Category::create($request->toModelData());
+        $category = Category::create($this->data($request));
+
+        $this->log->record(
+            $request->user(), 'create', 'category', $category->id,
+            "Catégorie « {$category->name} » créée",
+        );
 
         return (new CategoryResource($category))->response()->setStatusCode(201);
     }
 
     public function update(CategoryRequest $request, Category $category)
     {
-        $category->update($request->toModelData());
+        $category->update($this->data($request));
+
+        $this->log->record(
+            $request->user(), 'update', 'category', $category->id,
+            "Catégorie « {$category->name} » modifiée",
+        );
 
         return new CategoryResource($category);
     }
 
-    public function destroy(Category $category)
+    public function destroy(Request $request, Category $category)
     {
         $used = $category->productsCount();
 
@@ -51,6 +65,24 @@ class CategoryController extends Controller
 
         $category->delete();
 
+        $this->log->record(
+            $request->user(), 'delete', 'category', $category->id,
+            "Catégorie « {$category->name} » supprimée",
+        );
+
         return response()->noContent();
+    }
+
+    /** @return array<string, mixed> */
+    private function data(CategoryRequest $request): array
+    {
+        $v = $request->validated();
+
+        return [
+            'name' => $v['name'],
+            'slug' => $v['slug'],
+            'description' => $v['description'] ?? '',
+            'size_scale' => $v['sizeScale'],
+        ];
     }
 }
